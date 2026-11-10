@@ -1,0 +1,6 @@
+{
+  "name": "Dashboard Monitoring Aerator PV",
+  "description": "Sistem Aerasi Tenaga Surya untuk Budidaya Perikanan - Monitoring real-time PV, baterai, aerator, kualitas air (DO, pH, suhu), dan ringkasan energi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
