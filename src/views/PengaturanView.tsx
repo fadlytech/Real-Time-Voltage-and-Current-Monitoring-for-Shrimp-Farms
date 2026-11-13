@@ -50,7 +50,7 @@ export const PengaturanView: React.FC<PengaturanViewProps> = ({
             Pengaturan Monitoring Tegangan &amp; Arus PV
           </h2>
           <p className="text-xs sm:text-sm text-[#7c7f86] mt-0.5">
-            Setiap perubahan otomatis tersimpan di browser dan tetap ada saat aplikasi dibuka kembali
+            Setiap perubahan otomatis tersimpan dan disinkronkan agar tetap ada saat aplikasi dibuka kembali
           </p>
         </div>
 
@@ -136,7 +136,7 @@ export const PengaturanView: React.FC<PengaturanViewProps> = ({
 
         <div className="h-[1px] bg-[#f0f1f3]" />
 
-        {/* 2. Referensi Modul PV & Interval Akuisisi Sensor */}
+        {/* 2. Referensi Modul PV */}
         <div>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
@@ -145,10 +145,10 @@ export const PengaturanView: React.FC<PengaturanViewProps> = ({
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-[#1c1d1f]">
-                  2. Spesifikasi Referensi PV &amp; Pembacaan Sensor
+                  2. Spesifikasi Referensi PV
                 </h3>
                 <p className="text-xs sm:text-sm text-[#7c7f86]">
-                  Mengubah nilai Vmp &amp; Imp di bawah akan langsung memperbarui pembacaan dan ukuran lingkaran di Beranda
+                  Nilai acuan nominal Vmp &amp; Imp panel surya (juga tampil saat offline)
                 </p>
               </div>
             </div>
@@ -165,7 +165,7 @@ export const PengaturanView: React.FC<PengaturanViewProps> = ({
                   Tegangan Kerja / Aktual Vmp (V)
                 </label>
                 <span className="text-xs text-[#7c7f86]">
-                  Tegangan panel surya (mengubah nilai Volt &amp; ukuran lingkaran Volt di Beranda)
+                  Tegangan kerja nominal panel surya (Volt)
                 </span>
               </div>
               <input
@@ -184,7 +184,7 @@ export const PengaturanView: React.FC<PengaturanViewProps> = ({
                   Arus Kerja / Aktual Imp (A)
                 </label>
                 <span className="text-xs text-[#7c7f86]">
-                  Arus panel surya (mengubah nilai Ampere &amp; ukuran lingkaran Arus di Beranda)
+                  Arus kerja nominal panel surya (Ampere)
                 </span>
               </div>
               <input
@@ -200,22 +200,76 @@ export const PengaturanView: React.FC<PengaturanViewProps> = ({
             <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <label className="block text-xs sm:text-sm font-bold text-[#1c1d1f]">
-                  Interval Sampling Sensor (detik)
+                  Batas Timeout Status Offline (detik)
                 </label>
-                <span className="text-xs text-[#7c7f86]">
-                  Frekuensi pembaruan telemetri saat Mode Simulasi aktif
+                <span className="text-xs text-[#7c7f86] block">
+                  Jika data sensor tidak diperbarui dalam{' '}
+                  <strong className="text-[#1c1d1f]">
+                    {Math.max(5, Number(settings.offlineTimeoutSeconds) || 30) >= 60
+                      ? `${Number(
+                          (
+                            Math.max(5, Number(settings.offlineTimeoutSeconds) || 30) /
+                            60
+                          ).toFixed(1)
+                        )} menit (${Math.max(
+                          5,
+                          Number(settings.offlineTimeoutSeconds) || 30
+                        )} detik)`
+                      : `${Math.max(
+                          5,
+                          Number(settings.offlineTimeoutSeconds) || 30
+                        )} detik`}
+                  </strong>
+                  , status header otomatis menjadi <strong className="text-[#1c1d1f]">Offline</strong>
                 </span>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[
+                    { label: '15 dtk', value: 15 },
+                    { label: '30 dtk', value: 30 },
+                    { label: '1 mnt', value: 60 },
+                    { label: '3 mnt', value: 180 },
+                    { label: '5 mnt', value: 300 },
+                  ].map((preset) => {
+                    const active =
+                      (settings.offlineTimeoutSeconds ?? 30) === preset.value;
+                    return (
+                      <button
+                        key={preset.value}
+                        type="button"
+                        onClick={() =>
+                          updateField('offlineTimeoutSeconds', preset.value)
+                        }
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
+                          active
+                            ? 'bg-[#1c1d1f] text-[#d4f362]'
+                            : 'bg-white text-[#7c7f86] border border-[#e5e7eb] hover:text-[#1c1d1f]'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <select
-                value={settings.samplingInterval}
-                onChange={(e) => updateField('samplingInterval', Number(e.target.value))}
-                className="w-full sm:w-64 px-4 py-2.5 bg-white border border-[#e5e7eb] rounded-[12px] text-xs sm:text-sm font-bold text-[#1c1d1f] focus:outline-hidden focus:border-[#1c1d1f]"
-              >
-                <option value={1}>1 detik (Real-time Cepat)</option>
-                <option value={2}>2 detik (Standar)</option>
-                <option value={5}>5 detik (Hemat Data)</option>
-                <option value={10}>10 detik (Interval Lambat)</option>
-              </select>
+              <input
+                type="number"
+                step="5"
+                min="5"
+                value={settings.offlineTimeoutSeconds ?? 30}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  updateField(
+                    'offlineTimeoutSeconds',
+                    Number.isFinite(val) ? val : 30
+                  );
+                }}
+                onBlur={() => {
+                  if ((settings.offlineTimeoutSeconds ?? 0) < 5) {
+                    updateField('offlineTimeoutSeconds', 5);
+                  }
+                }}
+                className="w-full sm:w-64 px-4 py-2.5 bg-white border border-[#e5e7eb] rounded-[12px] text-base font-bold text-[#1c1d1f] tabular-nums focus:outline-hidden focus:border-[#1c1d1f]"
+              />
             </div>
           </div>
         </div>
