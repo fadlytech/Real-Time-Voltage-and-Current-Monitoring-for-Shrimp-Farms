@@ -16,7 +16,7 @@ export const initialPvSettings: PvSettings = {
   maxCurrent: 20.0,
   nominalVmp: 36.8,
   nominalImp: 16.6,
-  samplingInterval: 2,
+  offlineTimeoutSeconds: 30,
   undervoltageAlert: true,
   overcurrentProtection: true,
   autoLogging: true,
