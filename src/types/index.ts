@@ -25,7 +25,7 @@ export interface PvSettings {
   maxCurrent: number;
   nominalVmp: number;
   nominalImp: number;
-  samplingInterval: number;
+  offlineTimeoutSeconds: number;
   undervoltageAlert: boolean;
   overcurrentProtection: boolean;
   autoLogging: boolean;
@@ -37,4 +37,6 @@ export interface ChartDataPoint {
   arusPanel: number;     // A
   iradiasi: number;      // W/m²
   timestamp?: number;
+  dateLabel?: string;
+  sampleCount?: number;
 }
