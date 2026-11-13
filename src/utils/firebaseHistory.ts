@@ -38,19 +38,23 @@ function formatSlotTime(hour: number): string {
   return `${String(hour).padStart(2, '0')}:00`;
 }
 
-function formatLogTimestamp(ts: number): string {
-  const d = new Date(ts);
-  const datePart = d.toLocaleDateString('id-ID', {
+function formatLogDate(ts: number): string {
+  return new Date(ts).toLocaleDateString('id-ID', {
     day: '2-digit',
-    month: '2-digit',
+    month: 'short',
+    year: 'numeric',
   });
-  const timePart = d.toLocaleTimeString('id-ID', {
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-  return `${datePart} ${timePart}`;
+}
+
+function formatLogTime(ts: number): string {
+  return new Date(ts)
+    .toLocaleTimeString('id-ID', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+    .replace(/\./g, ':');
 }
 
 function aggregateDayBy3Hours(
@@ -58,6 +62,7 @@ function aggregateDayBy3Hours(
   targetDate: Date
 ): ChartDataPoint[] {
   const targetKey = toLocalDateKey(targetDate);
+  const targetDateLabel = formatShortDate(targetDate);
   const iradFallback = Math.round(getIradiasiBulanan2026(targetDate));
 
   const buckets = new Map<number, { sumV: number; sumI: number; count: number }>();
@@ -85,6 +90,8 @@ function aggregateDayBy3Hours(
       teganganPanel: hasData ? Number((b.sumV / b.count).toFixed(2)) : 0,
       arusPanel: hasData ? Number((b.sumI / b.count).toFixed(2)) : 0,
       iradiasi: hasData ? iradFallback : 0,
+      dateLabel: targetDateLabel,
+      sampleCount: b.count,
     };
   });
 }
@@ -158,6 +165,8 @@ export function parseAndAggregateFirebaseHistory(
       teganganPanel: Number(avgV.toFixed(2)),
       arusPanel: Number(avgI.toFixed(2)),
       iradiasi: irad,
+      dateLabel: formatShortDate(d),
+      sampleCount: count,
     });
   }
 
@@ -166,11 +175,13 @@ export function parseAndAggregateFirebaseHistory(
     .reverse()
     .slice(0, 200)
     .map((r) => ({
-      time: formatLogTimestamp(r.timestamp),
+      time: formatLogTime(r.timestamp),
+      dateLabel: formatLogDate(r.timestamp),
       teganganPanel: Number(r.voltage.toFixed(2)),
       arusPanel: Number(r.current.toFixed(2)),
       iradiasi: Math.round(getIradiasiBulanan2026(new Date(r.timestamp))),
       timestamp: r.timestamp,
+      sampleCount: 1,
     }));
 
   return {
