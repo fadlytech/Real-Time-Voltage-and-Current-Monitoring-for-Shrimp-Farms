@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { Zap, MoreVertical, Plus, Minus, AlertTriangle } from 'lucide-react';
 import { SolarTelemetry, PvSettings } from '../types';
 import { getIradiasiBulanan2026 } from '../data/solarRadiation';
+
+type BubbleParam = 'tegangan' | 'arus' | 'iradiasi';
 
 interface SystemDiagramProps {
   telemetry: SolarTelemetry;
@@ -16,6 +19,23 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
   onUpdateTelemetry,
   onOpenDetails,
 }) => {
+  const [layerOrder, setLayerOrder] = useState<BubbleParam[]>([
+    'tegangan',
+    'arus',
+    'iradiasi',
+  ]);
+
+  const bringToFront = (param: BubbleParam) => {
+    setLayerOrder((prev) => {
+      if (prev[prev.length - 1] === param) return prev;
+      return [...prev.filter((item) => item !== param), param];
+    });
+  };
+
+  const frontParam = layerOrder[layerOrder.length - 1];
+  const getLayerZIndex = (param: BubbleParam) =>
+    (layerOrder.indexOf(param) + 1) * 10;
+
   const dayaPv = (telemetry.teganganPanel * telemetry.arusPanel).toFixed(1);
   const defaultIradiasi = Math.round(getIradiasiBulanan2026(new Date()));
   const iradiasi =
@@ -127,7 +147,7 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
         </div>
       </div>
 
-      {/* 3 Enlarged Overlapping Bubble Circles (Full Size + Symmetrical Cluster Geometry) */}
+      {/* 3 Enlarged Overlapping Bubble Circles (Click/Tap any bubble to bring it to front) */}
       <div className="relative h-80 sm:h-88 my-3 select-none overflow-visible flex items-center justify-center">
         {/* 1. Lavender Circle: Tegangan Panel (Top-Left) */}
         <div
@@ -137,22 +157,44 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
             left: `calc(50% + ${xV}px)`,
             top: `calc(46% + ${yV}px)`,
             transform: 'translate(-50%, -50%)',
+            zIndex: getLayerZIndex('tegangan'),
           }}
-          className={`absolute rounded-full bg-[#c2b2fc] text-[#1c1d1f] flex flex-col items-center justify-center transition-all duration-300 ease-out z-10 ${
-            isOverVoltage ? 'ring-4 ring-red-500' : ''
-          }`}
+          className="absolute transition-all duration-300 ease-out"
         >
-          <span
-            style={{
-              fontSize: `${Math.max(22, Math.round(voltDiameter * 0.22))}px`,
+          <motion.button
+            type="button"
+            onClick={() => bringToFront('tegangan')}
+            aria-pressed={frontParam === 'tegangan'}
+            title="Klik untuk memajukan lingkaran Tegangan ke depan"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{
+              opacity: 1,
+              scale: frontParam === 'tegangan' ? 1.04 : 1,
+              y: [0, -4, 0],
             }}
-            className="font-extrabold tracking-tight tabular-nums leading-none"
+            transition={{
+              opacity: { duration: 0.35, delay: 0.05 },
+              scale: { type: 'spring', stiffness: 320, damping: 22 },
+              y: { duration: 3.8, repeat: Infinity, ease: 'easeInOut' },
+            }}
+            whileHover={{ scale: frontParam === 'tegangan' ? 1.06 : 1.04 }}
+            whileTap={{ scale: 0.94 }}
+            className={`w-full h-full rounded-full bg-[#c2b2fc] text-[#1c1d1f] flex flex-col items-center justify-center border-4 border-white cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1c1d1f]/30 ${
+              frontParam === 'tegangan' ? 'shadow-xl' : 'shadow-sm'
+            } ${isOverVoltage ? 'ring-4 ring-red-500' : ''}`}
           >
-            {telemetry.teganganPanel.toFixed(2).replace('.', ',')}
-          </span>
-          <span className="text-xs sm:text-sm font-medium text-[#1c1d1f]/80 mt-1">
-            Volt
-          </span>
+            <span
+              style={{
+                fontSize: `${Math.max(22, Math.round(voltDiameter * 0.22))}px`,
+              }}
+              className="font-extrabold tracking-tight tabular-nums leading-none"
+            >
+              {telemetry.teganganPanel.toFixed(2).replace('.', ',')}
+            </span>
+            <span className="text-xs sm:text-sm font-medium text-[#1c1d1f]/80 mt-1">
+              Volt
+            </span>
+          </motion.button>
         </div>
 
         {/* 2. Dark Charcoal Circle: Arus Panel (Top-Right, White Border) */}
@@ -163,22 +205,44 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
             left: `calc(50% + ${xI}px)`,
             top: `calc(46% + ${yI}px)`,
             transform: 'translate(-50%, -50%)',
+            zIndex: getLayerZIndex('arus'),
           }}
-          className={`absolute rounded-full bg-[#1c1d1f] text-white flex flex-col items-center justify-center border-4 border-white transition-all duration-300 ease-out z-20 ${
-            isOverCurrent ? 'ring-4 ring-red-500' : ''
-          }`}
+          className="absolute transition-all duration-300 ease-out"
         >
-          <span
-            style={{
-              fontSize: `${Math.max(20, Math.round(ampDiameter * 0.22))}px`,
+          <motion.button
+            type="button"
+            onClick={() => bringToFront('arus')}
+            aria-pressed={frontParam === 'arus'}
+            title="Klik untuk memajukan lingkaran Arus ke depan"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{
+              opacity: 1,
+              scale: frontParam === 'arus' ? 1.04 : 1,
+              y: [0, -5, 0],
             }}
-            className="font-extrabold tracking-tight tabular-nums leading-none"
+            transition={{
+              opacity: { duration: 0.35, delay: 0.14 },
+              scale: { type: 'spring', stiffness: 320, damping: 22 },
+              y: { duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 0.4 },
+            }}
+            whileHover={{ scale: frontParam === 'arus' ? 1.06 : 1.04 }}
+            whileTap={{ scale: 0.94 }}
+            className={`w-full h-full rounded-full bg-[#1c1d1f] text-white flex flex-col items-center justify-center border-4 border-white cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#c2b2fc]/60 ${
+              frontParam === 'arus' ? 'shadow-xl' : 'shadow-md'
+            } ${isOverCurrent ? 'ring-4 ring-red-500' : ''}`}
           >
-            {telemetry.arusPanel.toFixed(2).replace('.', ',')}
-          </span>
-          <span className="text-xs sm:text-sm font-medium text-white/80 mt-1">
-            Ampere
-          </span>
+            <span
+              style={{
+                fontSize: `${Math.max(20, Math.round(ampDiameter * 0.22))}px`,
+              }}
+              className="font-extrabold tracking-tight tabular-nums leading-none"
+            >
+              {telemetry.arusPanel.toFixed(2).replace('.', ',')}
+            </span>
+            <span className="text-xs sm:text-sm font-medium text-white/80 mt-1">
+              Ampere
+            </span>
+          </motion.button>
         </div>
 
         {/* 3. Lime Circle: Iradiasi Matahari (Bottom-Center, White Border) */}
@@ -189,20 +253,44 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
             left: `calc(50% + ${xG}px)`,
             top: `calc(46% + ${yG}px)`,
             transform: 'translate(-50%, -50%)',
+            zIndex: getLayerZIndex('iradiasi'),
           }}
-          className="absolute rounded-full bg-[#d4f362] text-[#1c1d1f] flex flex-col items-center justify-center border-4 border-white transition-all duration-300 ease-out z-30"
+          className="absolute transition-all duration-300 ease-out"
         >
-          <span
-            style={{
-              fontSize: `${Math.max(18, Math.round(iradDiameter * 0.23))}px`,
+          <motion.button
+            type="button"
+            onClick={() => bringToFront('iradiasi')}
+            aria-pressed={frontParam === 'iradiasi'}
+            title="Klik untuk memajukan lingkaran Iradiasi ke depan"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{
+              opacity: 1,
+              scale: frontParam === 'iradiasi' ? 1.04 : 1,
+              y: [0, -4, 0],
             }}
-            className="font-extrabold tracking-tight tabular-nums leading-none"
+            transition={{
+              opacity: { duration: 0.35, delay: 0.22 },
+              scale: { type: 'spring', stiffness: 320, damping: 22 },
+              y: { duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.8 },
+            }}
+            whileHover={{ scale: frontParam === 'iradiasi' ? 1.07 : 1.05 }}
+            whileTap={{ scale: 0.94 }}
+            className={`w-full h-full rounded-full bg-[#d4f362] text-[#1c1d1f] flex flex-col items-center justify-center border-4 border-white cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1c1d1f]/30 ${
+              frontParam === 'iradiasi' ? 'shadow-xl' : 'shadow-md'
+            }`}
           >
-            {iradiasi}
-          </span>
-          <span className="text-xs font-medium text-[#1c1d1f]/80 mt-0.5">
-            W/m²
-          </span>
+            <span
+              style={{
+                fontSize: `${Math.max(18, Math.round(iradDiameter * 0.23))}px`,
+              }}
+              className="font-extrabold tracking-tight tabular-nums leading-none"
+            >
+              {iradiasi}
+            </span>
+            <span className="text-xs font-medium text-[#1c1d1f]/80 mt-0.5">
+              W/m²
+            </span>
+          </motion.button>
         </div>
       </div>
 
@@ -236,22 +324,31 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
-              <span
-                className={`text-xs font-semibold flex items-center gap-1.5 tabular-nums ${
-                  isOverVoltage ? 'text-red-600 font-bold' : 'text-[#71757d]'
+              <button
+                type="button"
+                onClick={() => bringToFront('tegangan')}
+                title="Klik untuk memajukan parameter Tegangan ke depan"
+                className={`text-xs font-semibold flex items-center gap-1.5 tabular-nums cursor-pointer transition-colors hover:text-[#1c1d1f] ${
+                  isOverVoltage
+                    ? 'text-red-600 font-bold'
+                    : frontParam === 'tegangan'
+                    ? 'text-[#1c1d1f] font-bold'
+                    : 'text-[#71757d]'
                 }`}
               >
                 Tegangan ({telemetry.teganganPanel.toFixed(2)} / {maxV} V)
                 <span className="w-2 h-2 rounded-full bg-[#c2b2fc]" />
-              </span>
+              </button>
             </div>
           </div>
           <div className="h-2.5 w-full rounded-full bg-[#f3f4f6] overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${pctTegangan}%` }}
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              className={`h-full rounded-full ${
                 isOverVoltage ? 'bg-red-500' : 'bg-[#c2b2fc]'
               }`}
-              style={{ width: `${pctTegangan}%` }}
             />
           </div>
         </div>
@@ -284,22 +381,31 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
-              <span
-                className={`text-xs font-semibold flex items-center gap-1.5 tabular-nums ${
-                  isOverCurrent ? 'text-red-600 font-bold' : 'text-[#71757d]'
+              <button
+                type="button"
+                onClick={() => bringToFront('arus')}
+                title="Klik untuk memajukan parameter Arus ke depan"
+                className={`text-xs font-semibold flex items-center gap-1.5 tabular-nums cursor-pointer transition-colors hover:text-[#1c1d1f] ${
+                  isOverCurrent
+                    ? 'text-red-600 font-bold'
+                    : frontParam === 'arus'
+                    ? 'text-[#1c1d1f] font-bold'
+                    : 'text-[#71757d]'
                 }`}
               >
                 Arus ({telemetry.arusPanel.toFixed(2)} / {maxI} A)
                 <span className="w-2 h-2 rounded-full bg-[#1c1d1f]" />
-              </span>
+              </button>
             </div>
           </div>
           <div className="h-2.5 w-full rounded-full bg-[#f3f4f6] overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${pctArus}%` }}
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              className={`h-full rounded-full ${
                 isOverCurrent ? 'bg-red-500' : 'bg-[#1c1d1f]'
               }`}
-              style={{ width: `${pctArus}%` }}
             />
           </div>
         </div>
@@ -332,16 +438,27 @@ export const SystemDiagram: React.FC<SystemDiagramProps> = ({
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
-              <span className="text-xs font-semibold text-[#71757d] flex items-center gap-1.5 tabular-nums">
+              <button
+                type="button"
+                onClick={() => bringToFront('iradiasi')}
+                title="Klik untuk memajukan parameter Iradiasi ke depan"
+                className={`text-xs font-semibold flex items-center gap-1.5 tabular-nums cursor-pointer transition-colors hover:text-[#1c1d1f] ${
+                  frontParam === 'iradiasi'
+                    ? 'text-[#1c1d1f] font-bold'
+                    : 'text-[#71757d]'
+                }`}
+              >
                 Iradiasi ({iradiasi} / {maxG} W/m²)
                 <span className="w-2 h-2 rounded-full bg-[#d4f362]" />
-              </span>
+              </button>
             </div>
           </div>
           <div className="h-2.5 w-full rounded-full bg-[#f3f4f6] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[#d4f362] transition-all duration-300"
-              style={{ width: `${pctIradiasi}%` }}
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${pctIradiasi}%` }}
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              className="h-full rounded-full bg-[#d4f362]"
             />
           </div>
         </div>

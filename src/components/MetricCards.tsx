@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { Zap, Activity, Sun, AlertTriangle } from 'lucide-react';
 import { SolarTelemetry, PvSettings } from '../types';
 import {
@@ -110,7 +111,11 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       {/* Left Pair: Side-by-side 2-col on HP for symmetry, stacked on desktop */}
       <div className="sm:col-span-5 grid grid-cols-2 sm:grid-cols-1 gap-3">
         {/* 1. Tegangan Panel */}
-        <div
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.04, ease: [0.22, 1, 0.36, 1] }}
+          whileHover={{ y: -2 }}
           className={`flux-card flex flex-col justify-between flex-1 ${
             isOverVoltage ? 'ring-2 ring-red-500' : ''
           }`}
@@ -155,10 +160,14 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               </span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* 2. Arus Panel */}
-        <div
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          whileHover={{ y: -2 }}
           className={`flux-card flex flex-col justify-between flex-1 ${
             isOverCurrent ? 'ring-2 ring-red-500' : ''
           }`}
@@ -203,11 +212,17 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               </span>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Right Card: Iradiasi Matahari (12 Bulan Jan-Des × 5 Kolom Titik Besar, Semakin Ungu Mendekati Maksimal) */}
-      <div className="sm:col-span-7 flux-card flex flex-col justify-between">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
+        whileHover={{ y: -2 }}
+        className="sm:col-span-7 flux-card flex flex-col justify-between"
+      >
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2.5">
@@ -269,10 +284,18 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                       item.activeDots
                     );
                     return (
-                      <span
+                      <motion.span
                         key={dotLevel}
                         style={{ backgroundColor: bgColor }}
-                        className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full transition-transform duration-150 group-hover:scale-110"
+                        initial={{ opacity: 0, scale: 0.45 }}
+                        animate={{ opacity: 1, scale: isFocused ? 1.06 : 1 }}
+                        transition={{
+                          duration: 0.25,
+                          delay: 0.14 + idx * 0.025 + (5 - dotLevel) * 0.02,
+                          ease: 'easeOut',
+                        }}
+                        whileHover={{ scale: 1.18 }}
+                        className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full"
                       />
                     );
                   })}
@@ -290,7 +313,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             );
           })}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 };

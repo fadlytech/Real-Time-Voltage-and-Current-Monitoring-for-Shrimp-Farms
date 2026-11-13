@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Play, Pause, RefreshCw, ChevronDown, Zap, Edit3, Check, X } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Sun, RefreshCw, Zap, Edit3, Check, X } from 'lucide-react';
 import { SolarTelemetry, PondInfo, FirebaseStatus } from '../types';
 
 interface HeaderProps {
   telemetry: SolarTelemetry;
   pondInfo: PondInfo;
   onUpdatePondInfo: (updated: PondInfo) => void;
-  isSimulating: boolean;
-  onToggleSimulate: () => void;
   onResetData: () => void;
   firebaseStatus?: FirebaseStatus;
   firebaseError?: string | null;
+  isSensorStale?: boolean;
+  offlineTimeoutSeconds?: number;
 }
 
 const FIREBASE_STATUS_UI: Record<
@@ -18,29 +19,29 @@ const FIREBASE_STATUS_UI: Record<
   { label: string; dotClass: string; badgeClass: string }
 > = {
   connected: {
-    label: 'Firebase Live',
+    label: 'Online',
     dotClass: 'bg-emerald-500 animate-pulse',
-    badgeClass: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+    badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
   },
   connecting: {
-    label: 'Menghubungkan Firebase...',
+    label: 'Menghubungkan...',
     dotClass: 'bg-amber-500 animate-ping',
     badgeClass: 'bg-amber-50 text-amber-800 border border-amber-200',
   },
   auth_error: {
-    label: 'Auth Firebase Ditolak',
+    label: 'Offline',
     dotClass: 'bg-red-500',
     badgeClass: 'bg-red-50 text-red-700 border border-red-200',
   },
   error: {
-    label: 'Koneksi Firebase Gagal',
+    label: 'Offline',
     dotClass: 'bg-red-500',
     badgeClass: 'bg-red-50 text-red-700 border border-red-200',
   },
   unconfigured: {
-    label: 'Mode Lokal',
+    label: 'Offline',
     dotClass: 'bg-neutral-400',
-    badgeClass: 'bg-white/75 text-[#71757d]',
+    badgeClass: 'bg-white/80 text-[#71757d] border border-[#e5e7eb]',
   },
 };
 
@@ -48,11 +49,11 @@ export const Header: React.FC<HeaderProps> = ({
   telemetry,
   pondInfo,
   onUpdatePondInfo,
-  isSimulating,
-  onToggleSimulate,
   onResetData,
   firebaseStatus = 'unconfigured',
   firebaseError,
+  isSensorStale = false,
+  offlineTimeoutSeconds = 30,
 }) => {
   const [now, setNow] = useState<Date>(() => new Date());
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
@@ -82,16 +83,37 @@ export const Header: React.FC<HeaderProps> = ({
   });
 
   const dayaPv = telemetry.teganganPanel * telemetry.arusPanel;
-  const statusUi = FIREBASE_STATUS_UI[firebaseStatus];
+  const effectiveStatus: FirebaseStatus =
+    firebaseStatus === 'connected' && isSensorStale ? 'error' : firebaseStatus;
+  const statusUi = FIREBASE_STATUS_UI[effectiveStatus];
 
   const sensorTimeLabel = telemetry.timestamp
-    ? new Date(telemetry.timestamp).toLocaleTimeString('id-ID', {
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      })
+    ? new Date(telemetry.timestamp)
+        .toLocaleString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+        .replace(/\./g, ':')
     : null;
+
+  const timeoutDesc =
+    offlineTimeoutSeconds >= 60
+      ? `${Number((offlineTimeoutSeconds / 60).toFixed(1))} menit`
+      : `${offlineTimeoutSeconds} detik`;
+
+  const statusTooltip =
+    firebaseStatus === 'connected' && isSensorStale
+      ? `Offline · Data sensor tidak berubah selama > ${timeoutDesc}${
+          sensorTimeLabel ? ` (terakhir ${sensorTimeLabel})` : ''
+        }`
+      : firebaseError ||
+        (sensorTimeLabel
+          ? `Online · Pembaruan data terakhir ${sensorTimeLabel}`
+          : statusUi.label);
 
   const handleSaveProfile = () => {
     onUpdatePondInfo({
@@ -179,17 +201,19 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* Mobile-only Reset Button so Row 1 is symmetrical on HP */}
-          <button
+          <motion.button
             type="button"
             onClick={onResetData}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.9 }}
             title="Reset ke Nilai Standar"
-            className="sm:hidden w-10 h-10 rounded-full bg-white text-[#1c1d1f] grid place-items-center relative shadow-2xs cursor-pointer shrink-0"
+            className="sm:hidden group w-10 h-10 rounded-full bg-white text-[#1c1d1f] grid place-items-center relative shadow-2xs cursor-pointer shrink-0"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-4 h-4 transition-transform duration-500 group-hover:rotate-180" />
             <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#d4f362] text-[#1c1d1f] text-[9px] font-extrabold grid place-items-center">
               <Zap className="w-2.5 h-2.5 fill-current" />
             </span>
-          </button>
+          </motion.button>
         </div>
 
         {/* Right Live Telemetry Bar & Desktop Reset Circle */}
@@ -206,21 +230,23 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <span className="text-[#d1d5db] hidden sm:inline">|</span>
             <span className="text-[#71757d] font-semibold tabular-nums">
-              {telemetry.teganganPanel.toFixed(1)} V · {telemetry.arusPanel.toFixed(2)} A
+              {telemetry.teganganPanel.toFixed(2)} V · {telemetry.arusPanel.toFixed(2)} A
             </span>
           </div>
 
-          <button
+          <motion.button
             type="button"
             onClick={onResetData}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.9 }}
             title="Reset ke Nilai Standar"
-            className="hidden sm:grid w-10 h-10 rounded-full bg-white text-[#1c1d1f] place-items-center relative shadow-2xs cursor-pointer hover:bg-neutral-50 shrink-0"
+            className="hidden sm:grid group w-10 h-10 rounded-full bg-white text-[#1c1d1f] place-items-center relative shadow-2xs cursor-pointer hover:bg-neutral-50 shrink-0"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-4 h-4 transition-transform duration-500 group-hover:rotate-180" />
             <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#d4f362] text-[#1c1d1f] text-[9px] font-extrabold grid place-items-center">
               <Zap className="w-2.5 h-2.5 fill-current" />
             </span>
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -235,48 +261,26 @@ export const Header: React.FC<HeaderProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto bg-white/50 sm:bg-transparent rounded-full px-3.5 py-1.5 sm:p-0">
-          {/* Firebase Status Badge */}
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2.5 w-full sm:w-auto bg-white/75 sm:bg-white/80 rounded-full px-3.5 py-2 shadow-2xs">
+          {/* Online / Offline Status Badge */}
           <span
-            title={
-              firebaseError ||
-              (sensorTimeLabel
-                ? `Data sensor terakhir pukul ${sensorTimeLabel}`
-                : statusUi.label)
-            }
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${statusUi.badgeClass}`}
+            title={statusTooltip}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors duration-300 ${statusUi.badgeClass}`}
           >
-            <span className={`w-2 h-2 rounded-full ${statusUi.dotClass}`} />
+            <span className="relative flex h-2 w-2 items-center justify-center">
+              {effectiveStatus === 'connected' && (
+                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+              )}
+              <span className={`relative w-2 h-2 rounded-full ${statusUi.dotClass}`} />
+            </span>
             <span>{statusUi.label}</span>
           </span>
+
+          <span className="text-[#d1d5db]">|</span>
 
           <span className="text-xs font-semibold text-[#71757d] tabular-nums">
             {dateStr} · {timeStr}
           </span>
-
-          <button
-            type="button"
-            onClick={onToggleSimulate}
-            className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-2xs cursor-pointer ${
-              isSimulating
-                ? 'bg-[#d4f362] text-[#1c1d1f]'
-                : 'bg-white text-[#1c1d1f] hover:bg-neutral-50'
-            }`}
-          >
-            {isSimulating ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-[#1c1d1f] animate-ping" />
-                <Pause className="w-3.5 h-3.5" />
-                <span>Live Data</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5" />
-                <span>Simulasi</span>
-              </>
-            )}
-            <ChevronDown className="w-3.5 h-3.5 text-[#71757d]" />
-          </button>
         </div>
       </div>
     </header>

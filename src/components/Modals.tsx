@@ -1,4 +1,5 @@
 import React from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { X, Zap, Sliders, Cpu } from 'lucide-react';
 import type { SolarTelemetry } from '../types';
 
@@ -13,11 +14,27 @@ export const Modals: React.FC<ModalsProps> = ({
   onCloseDetail,
   telemetry,
 }) => {
-  if (!isDetailOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1c1d1f]/60 backdrop-blur-xs">
-      <div className="flux-card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+    <AnimatePresence>
+      {isDetailOpen && (
+        <motion.div
+          key="detail-modal-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onCloseDetail}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1c1d1f]/60 backdrop-blur-xs"
+        >
+          <motion.div
+            key="detail-modal-panel"
+            initial={{ opacity: 0, scale: 0.94, y: 14 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+            onClick={(e) => e.stopPropagation()}
+            className="flux-card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6"
+          >
         <div className="flex items-center justify-between pb-4 border-b border-[#f0f1f3]">
           <div className="flex items-center gap-3">
             <div className="flux-icon-circle">
@@ -152,7 +169,9 @@ export const Modals: React.FC<ModalsProps> = ({
             Tutup Rincian
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

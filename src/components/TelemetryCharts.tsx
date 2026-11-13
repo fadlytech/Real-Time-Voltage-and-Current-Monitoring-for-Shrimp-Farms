@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { BarChart3, ChevronDown } from 'lucide-react';
 import { ChartDataPoint, SolarTelemetry } from '../types';
 
@@ -103,20 +104,30 @@ export const TelemetryCharts: React.FC<TelemetryChartsProps> = ({
               { id: 'yesterday', label: 'Kemarin' },
               { id: 'week', label: '7 Hari' },
             ] as const
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setSelectedRange(tab.id)}
-              className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
-                selectedRange === tab.id
-                  ? 'bg-[#d4f362] text-[#1c1d1f]'
-                  : 'text-[#9ca3af] hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          ).map((tab) => {
+            const isSelected = selectedRange === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedRange(tab.id)}
+                className={`relative px-3 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
+                  isSelected
+                    ? 'text-[#1c1d1f]'
+                    : 'text-[#9ca3af] hover:text-white'
+                }`}
+              >
+                {isSelected && (
+                  <motion.span
+                    layoutId="chartRangePill"
+                    transition={{ type: 'spring', stiffness: 440, damping: 32 }}
+                    className="absolute inset-0 rounded-full bg-[#d4f362]"
+                  />
+                )}
+                <span className="relative z-10">{tab.label}</span>
+              </button>
+            );
+          })}
           <ChevronDown className="w-3.5 h-3.5 text-[#9ca3af] mr-1.5 hidden sm:block" />
         </div>
       </div>
@@ -207,30 +218,66 @@ export const TelemetryCharts: React.FC<TelemetryChartsProps> = ({
               {/* Triple Pill Bars: Tegangan, Arus, Daya */}
               <div className="flex items-end justify-center gap-1 sm:gap-1.5 w-full flex-1 pb-2.5">
                 {/* Bar 1: Tegangan Panel */}
-                <div
-                  style={{ height: `${vPct}%` }}
+                <motion.div
+                  key={`${selectedRange}-${idx}-v`}
+                  initial={{ height: '8%', opacity: 0.45 }}
+                  animate={{ height: `${vPct}%`, opacity: 1 }}
+                  transition={{
+                    height: {
+                      duration: 0.45,
+                      delay: idx * 0.035,
+                      ease: [0.22, 1, 0.36, 1],
+                    },
+                    opacity: { duration: 0.25, delay: idx * 0.035 },
+                  }}
+                  whileHover={{ scaleY: 1.04 }}
+                  style={{ originY: 1 }}
                   title={`Tegangan (${point.time}): ${point.teganganPanel.toFixed(2)} V`}
-                  className={`w-2.5 sm:w-3.5 rounded-full transition-all duration-300 ${
+                  className={`w-2.5 sm:w-3.5 rounded-full transition-colors duration-200 ${
                     isHighlighted
                       ? 'bg-[#d4f362]'
                       : 'flux-striped-bar group-hover:opacity-90'
                   }`}
                 />
                 {/* Bar 2: Arus Panel */}
-                <div
-                  style={{ height: `${iPct}%` }}
+                <motion.div
+                  key={`${selectedRange}-${idx}-i`}
+                  initial={{ height: '8%', opacity: 0.45 }}
+                  animate={{ height: `${iPct}%`, opacity: 1 }}
+                  transition={{
+                    height: {
+                      duration: 0.45,
+                      delay: idx * 0.035 + 0.04,
+                      ease: [0.22, 1, 0.36, 1],
+                    },
+                    opacity: { duration: 0.25, delay: idx * 0.035 + 0.04 },
+                  }}
+                  whileHover={{ scaleY: 1.04 }}
+                  style={{ originY: 1 }}
                   title={`Arus (${point.time}): ${point.arusPanel.toFixed(2)} A`}
-                  className={`w-2.5 sm:w-3.5 rounded-full transition-all duration-300 ${
+                  className={`w-2.5 sm:w-3.5 rounded-full transition-colors duration-200 ${
                     isHighlighted
                       ? 'bg-[#c2b2fc]'
                       : 'flux-striped-bar group-hover:opacity-90'
                   }`}
                 />
                 {/* Bar 3: Daya PV */}
-                <div
-                  style={{ height: `${pPct}%` }}
+                <motion.div
+                  key={`${selectedRange}-${idx}-p`}
+                  initial={{ height: '8%', opacity: 0.45 }}
+                  animate={{ height: `${pPct}%`, opacity: 1 }}
+                  transition={{
+                    height: {
+                      duration: 0.45,
+                      delay: idx * 0.035 + 0.08,
+                      ease: [0.22, 1, 0.36, 1],
+                    },
+                    opacity: { duration: 0.25, delay: idx * 0.035 + 0.08 },
+                  }}
+                  whileHover={{ scaleY: 1.04 }}
+                  style={{ originY: 1 }}
                   title={`Daya PV (${point.time}): ${powerVal.toFixed(1)} W`}
-                  className={`w-2.5 sm:w-3.5 rounded-full transition-all duration-300 ${
+                  className={`w-2.5 sm:w-3.5 rounded-full transition-colors duration-200 ${
                     isHighlighted
                       ? 'bg-white'
                       : 'flux-striped-bar group-hover:opacity-90'
