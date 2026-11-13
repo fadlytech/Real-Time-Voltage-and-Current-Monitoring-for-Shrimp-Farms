@@ -54,6 +54,11 @@
   border-radius: 26px;
   padding: 22px;
   box-shadow: 0 2px 10px rgba(28, 29, 31, 0.03);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.flux-card:hover {
+  box-shadow: 0 8px 24px rgba(28, 29, 31, 0.06);
 }
 
 .flux-dark-card {
@@ -61,6 +66,11 @@
   color: #ffffff;
   border-radius: 26px;
   padding: 24px;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.flux-dark-card:hover {
+  box-shadow: 0 12px 30px rgba(28, 29, 31, 0.14);
 }
 
 .flux-icon-circle {
